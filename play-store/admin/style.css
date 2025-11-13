@@ -1,0 +1,287 @@
+@import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap');
+
+:root {
+    --primary-yellow: #d9aa00;
+    --dark-bg: #111111;
+    --card-bg: #1c1c1c;
+    --card-bg-light: #2a2a2a;
+    --light-text: #ffffff;
+    --grey-text: #aaaaaa;
+    --error-red: #e74c3c;
+    --success-green: #2ecc71;
+    --primary-blue: #3498db;
+}
+
+/* --- الإعدادات العامة والتجاوب --- */
+* {
+    box-sizing: border-box;
+}
+
+html {
+    font-size: 16px;
+}
+
+body {
+    font-family: 'Tajawal', sans-serif; 
+    margin: 0; 
+    background-color: var(--dark-bg);
+    color: var(--light-text); 
+    direction: rtl;
+    line-height: 1.6;
+}
+
+.dashboard-container { 
+    max-width: 1200px; 
+    margin: 20px auto; 
+    padding: 20px; 
+    background-color: var(--card-bg); 
+    border-radius: 8px; 
+    border: 1px solid var(--card-bg-light);
+}
+
+/* --- صفحة تسجيل الدخول --- */
+.login-page { 
+    display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px;
+}
+.login-container { 
+    background: var(--card-bg); padding: 40px; border-radius: 8px; 
+    border: 1px solid var(--card-bg-light); box-shadow: 0 4px 20px rgba(0,0,0,0.4); 
+    width: 100%; max-width: 400px; text-align: center; 
+}
+.login-container h2 { margin-top: 0; margin-bottom: 20px; color: var(--primary-yellow); }
+.login-container input { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #444; background-color: var(--card-bg-light); color: var(--light-text); border-radius: 4px; }
+.login-container button { width: 100%; padding: 12px; background: var(--primary-yellow); color: var(--dark-bg); border: none; border-radius: 4px; cursor: pointer; font-size: 1.1rem; font-weight: bold; transition: background-color 0.2s; }
+.login-container button:hover { background-color: #c59221; }
+.login-container .error-message { color: #f8d7da; background-color: rgba(220, 53, 69, 0.2); border: 1px solid var(--error-red); padding: 10px; border-radius: 4px; margin-bottom: 15px; }
+
+/* --- الهيدر والتنقل --- */
+.dashboard-header { 
+    display: flex; 
+    flex-wrap: wrap;
+    justify-content: space-between; 
+    align-items: center; 
+    border-bottom: 1px solid var(--card-bg-light); 
+    padding-bottom: 20px; 
+    margin-bottom: 20px; 
+    gap: 15px;
+}
+.dashboard-header h1 { margin: 0; color: var(--primary-yellow); font-size: 1.8rem; }
+.dashboard-header .main-nav { display: flex; flex-wrap: wrap; gap: 20px; }
+.dashboard-header .main-nav a { text-decoration: none; color: var(--grey-text); font-weight: 500; transition: color 0.2s; }
+.dashboard-header .main-nav a:hover,
+.dashboard-header .main-nav a.active { color: var(--primary-yellow); }
+
+/* --- المحتوى الرئيسي والأزرار --- */
+.main-header { 
+    display: flex; 
+    flex-wrap: wrap;
+    justify-content: space-between; 
+    align-items: center; 
+    margin-bottom: 20px; 
+    gap: 15px;
+}
+.main-header h2 { margin: 0; }
+
+.btn {
+    padding: 10px 20px; 
+    border: none; 
+    border-radius: 5px; 
+    cursor: pointer; 
+    font-size: 1rem;
+    font-family: 'Tajawal', sans-serif;
+    font-weight: bold;
+    transition: background-color 0.2s, transform 0.2s;
+}
+.btn:hover { transform: scale(1.05); }
+.btn.btn-primary { background-color: var(--primary-blue); color: #fff; }
+.btn.btn-primary:hover { background-color: #2980b9; }
+
+/* --- تصميم الجداول --- */
+.table-wrapper {
+    overflow-x: auto;
+}
+table { 
+    width: 100%; 
+    border-collapse: collapse; 
+    min-width: 600px;
+}
+th, td { 
+    padding: 15px; 
+    border-bottom: 1px solid var(--card-bg-light); 
+    text-align: right; 
+    vertical-align: middle; 
+}
+th { 
+    background-color: var(--card-bg-light); 
+    color: var(--light-text);
+    font-weight: bold;
+}
+td img { 
+    width: 60px; 
+    height: 60px; 
+    object-fit: cover; 
+    border-radius: 4px; 
+}
+.action-btn { 
+    border: none; background: none; cursor: pointer; margin-left: 10px; font-size: 0.9rem;
+    font-weight: bold; transition: transform 0.2s, opacity 0.2s;
+}
+.action-btn:hover { opacity: 0.8; }
+.edit-btn { color: var(--primary-blue); }
+.delete-btn { color: var(--error-red); }
+
+/* --- تصميم النافذة المنبثقة (Modal) --- */
+.modal { 
+    display: none; position: fixed; z-index: 1000; left: 0; top: 0; 
+    width: 100%; height: 100%; background-color: rgba(0,0,0,0.7); 
+    justify-content: center; align-items: center; padding: 20px;
+}
+.modal-content { 
+    background-color: var(--card-bg);
+    border: 1px solid var(--card-bg-light);
+    padding: 30px; 
+    border-radius: 8px; 
+    width: 100%; 
+    max-width: 500px; 
+    position: relative;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+.close-btn { 
+    position: absolute; top: 10px; left: 15px; font-size: 2rem; 
+    border: none; background: none; cursor: pointer; color: #888;
+    transition: color 0.2s;
+}
+.close-btn:hover { color: #fff; }
+
+.form-group {
+    margin-bottom: 15px;
+    text-align: right;
+}
+.form-group label { 
+    display: block;
+    margin-bottom: 8px; 
+    font-weight: 500; 
+}
+.form-group input, .form-group select, .form-group textarea { 
+    width: 100%;
+    padding: 12px; 
+    border: 1px solid #444;
+    background-color: var(--card-bg-light);
+    color: var(--light-text);
+    border-radius: 4px; 
+    font-size: 1rem; 
+    font-family: 'Tajawal', sans-serif;
+}
+.form-actions {
+    margin-top: 20px;
+    text-align: left;
+}
+
+
+/* --- التجاوب مع الشاشات الصغيرة --- */
+@media (max-width: 768px) {
+    .dashboard-container {
+        margin: 10px;
+        padding: 15px;
+    }
+    .dashboard-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .dashboard-header .main-nav {
+        margin-top: 15px;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+    }
+    .dashboard-header .main-nav a {
+        margin: 0;
+        padding: 10px;
+        border-radius: 4px;
+    }
+    .dashboard-header .main-nav a.active {
+        background-color: var(--card-bg-light);
+    }
+    td, th {
+        padding: 10px 8px;
+        font-size: 0.9rem;
+    }
+    td img {
+        width: 40px;
+        height: 40px;
+    }
+}
+
+
+.status-active, .status-inactive {
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+.status-active {
+    background-color: rgba(46, 204, 113, 0.2);
+    color: #2ecc71;
+}
+.status-inactive {
+    background-color: rgba(149, 165, 166, 0.2);
+    color: #95a5a6;
+}
+
+
+
+/* --- أنماط صفحة إعدادات الدفع --- */
+.payment-gateway-box {
+    background-color: var(--card-bg-light);
+    border: 1px solid #444;
+    border-radius: 8px;
+    padding: 25px;
+    margin-bottom: 25px;
+}
+.payment-gateway-box h3 {
+    margin-top: 0;
+    color: var(--primary-yellow);
+    border-bottom: 1px solid #444;
+    padding-bottom: 15px;
+    margin-bottom: 20px;
+}
+.form-group input[type="checkbox"] {
+    width: auto;
+    margin-left: 10px;
+}
+
+/* --- أنماط صفحة الطلبات --- */
+.view-receipt-link {
+    color: var(--primary-blue);
+    font-weight: bold;
+    text-decoration: none;
+}
+.view-receipt-link:hover {
+    text-decoration: underline;
+}
+
+/* تعديل عام على الأزرار لتشمل ألوان جديدة */
+.btn {
+    padding: 8px 15px; /* تصغير حجم الأزرار قليلاً في الجداول */
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-family: 'Tajawal', sans-serif;
+    font-weight: bold;
+    transition: background-color 0.2s, transform 0.2s;
+}
+.btn:hover { transform: scale(1.05); }
+
+.btn.btn-primary { background-color: var(--primary-blue); color: #fff; }
+.btn.btn-primary:hover { background-color: #2980b9; }
+
+.btn.btn-success { background-color: var(--success-green); color: #fff; }
+.btn.btn-success:hover { background-color: #27ae60; }
+
+.btn.btn-danger { background-color: var(--error-red); color: #fff; }
+.btn.btn-danger:hover { background-color: #c0392b; }
+
+td form { margin-left: 5px; }
