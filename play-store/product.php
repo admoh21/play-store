@@ -33,6 +33,7 @@ $conn->close();
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
+    <meta name="csrf-token" content="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
     <title><?= htmlspecialchars($product['name']) ?></title>
     <link rel="stylesheet" href="style.css">
 </head>

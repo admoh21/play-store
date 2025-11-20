@@ -24,7 +24,14 @@ $bank_details = json_decode($payment_method['config_details'], true);
 
 // التعامل مع رفع الإيصال
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['receipt'])) {
-    if (isset($_FILES['receipt']) && $_FILES['receipt']['error'] == UPLOAD_ERR_OK) {
+
+    // التحقق من رمز CSRF
+    $csrf_token = $_POST['csrf_token'] ?? '';
+    if (!verify_csrf_token($csrf_token)) {
+        $message = "خطأ: طلب غير صالح. يرجى تحديث الصفحة والمحاولة مرة أخرى.";
+    }
+    // إذا كان الرمز صحيحًا، استمر في معالجة الملف
+    elseif (isset($_FILES['receipt']) && $_FILES['receipt']['error'] == UPLOAD_ERR_OK) {
         $file = $_FILES['receipt'];
         $max_size = 5 * 1024 * 1024; // 5 MB
         $allowed_extensions = ['jpg', 'jpeg', 'png', 'gif'];
@@ -114,6 +121,7 @@ $conn->close();
                             <p>يرجى رفع صورة واضحة من إيصال التحويل باستخدام النموذج أدناه.</p>
                         </div>
                         <form method="POST" enctype="multipart/form-data" class="receipt-form">
+                            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
                             <label for="receipt">اختر ملف الإيصال:</label>
                             <input type="file" name="receipt" id="receipt" required accept="image/*">
                             <button type="submit" class="modal-btn">رفع وتأكيد الدفع</button>
