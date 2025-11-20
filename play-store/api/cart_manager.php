@@ -1,8 +1,36 @@
 <?php
 // api/cart_manager.php
 
+// --- START: Enhanced Error Handling ---
+// This will catch any fatal errors and send them as a clean JSON response.
+// This is crucial for debugging APIs, as it prevents the generic "network error"
+// message in the frontend.
+error_reporting(0); // Turn off default error reporting
+register_shutdown_function(function () {
+    $error = error_get_last();
+    if ($error !== null && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR])) {
+        // Check if headers have already been sent
+        if (!headers_sent()) {
+            http_response_code(500); // Internal Server Error
+            header("Content-Type: application/json; charset=UTF-8");
+        }
+        echo json_encode([
+            'status' => 'error',
+            'message' => 'حدث خطأ فادح في الخادم.',
+            'error_details' => [ // Provide details for debugging
+                'type' => $error['type'],
+                'message' => $error['message'],
+                'file' => $error['file'],
+                'line' => $error['line'],
+            ]
+        ]);
+    }
+});
+// --- END: Enhanced Error Handling ---
+
 require_once '../config.php';
 
+// We already set this in the error handler, but we set it here again for the normal execution path.
 header("Content-Type: application/json; charset=UTF-8");
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -55,7 +83,8 @@ if ($action == 'add') {
             if (!in_array($product_id, $_SESSION['cart'])) {
                 $_SESSION['cart'][] = $product_id;
             }
-            $response['status' => 'success';
+            // THIS IS THE FIX: The missing semicolon is now added.
+            $response['status'] = 'success';
             $response['message'] = 'تمت إضافة المنتج إلى السلة!';
         } else {
             $response['message'] = 'المنتج المطلوب غير موجود.';

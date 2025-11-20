@@ -1,5 +1,29 @@
 <?php
 // api/auth.php
+
+// --- START: Enhanced Error Handling ---
+error_reporting(0);
+register_shutdown_function(function () {
+    $error = error_get_last();
+    if ($error !== null && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR])) {
+        if (!headers_sent()) {
+            http_response_code(500);
+            header("Content-Type: application/json; charset=UTF-8");
+        }
+        echo json_encode([
+            'status' => 'error',
+            'message' => 'حدث خطأ فادح في الخادم.',
+            'error_details' => [
+                'type' => $error['type'],
+                'message' => $error['message'],
+                'file' => $error['file'],
+                'line' => $error['line'],
+            ]
+        ]);
+    }
+});
+// --- END: Enhanced Error Handling ---
+
 require_once '../config.php'; // للوصول إلى الاتصال بقاعدة البيانات
 
 header("Content-Type: application/json; charset=UTF-8");
