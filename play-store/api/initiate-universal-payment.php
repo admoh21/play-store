@@ -10,6 +10,21 @@ if (file_exists('../vendor/autoload.php')) {
 
 header('Content-Type: application/json');
 
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    http_response_code(405); // Method Not Allowed
+    echo json_encode(['status' => 'error', 'message' => 'الطريقة غير مسموح بها.']);
+    exit;
+}
+
+// التحقق من رمز CSRF من الرأس
+$csrf_token = trim($_SERVER['HTTP_X_CSRF_TOKEN'] ?? '');
+if (!verify_csrf_token($csrf_token)) {
+    http_response_code(403); // Forbidden
+    echo json_encode(['status' => 'error', 'message' => 'طلب غير صالح أو جلسة منتهية. يرجى تحديث الصفحة والمحاولة مرة أخرى.']);
+    exit;
+}
+
+
 if (!isLoggedIn()) {
     http_response_code(403);
     echo json_encode(['status' => 'error', 'message' => 'يجب تسجيل الدخول لإتمام عملية الدفع.']);
@@ -55,7 +70,7 @@ while ($product = $query->fetch_assoc()) {
 $currentUser = getCurrentUser($conn);
 
 // إنشاء الطلب في قاعدة بياناتنا بحالة "بانتظار الدفع"
-$status = 'banned_payment'; 
+$status = 'pending_payment';
 $stmt = $conn->prepare("INSERT INTO orders (user_id, total_amount, status, payment_method_id) VALUES (?, ?, ?, ?)");
 $stmt->bind_param("idsi", $currentUser['id'], $total_amount, $status, $gateway['id']);
 $stmt->execute();
@@ -85,23 +100,32 @@ if ($gateway['gateway_code'] == 'stripe') {
         ];
     }
     try {
+        // تحديد عنوان URL الأساسي ديناميكيًا
+        $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || $_SERVER['SERVER_PORT'] == 443) ? "https://" : "http://";
+        $host = $_SERVER['HTTP_HOST'];
+        $base_dir = dirname(dirname($_SERVER['SCRIPT_NAME'])); // للوصول إلى الجذر
+        $base_url = rtrim($protocol . $host . $base_dir, '/');
+
         $checkout_session = \Stripe\Checkout\Session::create([
             'payment_method_types' => ['card'],
             'line_items' => $line_items,
             'mode' => 'payment',
-            'success_url' => 'http://localhost/my-store-php/success.php?order_id=' . $order_id,
-            'cancel_url' => 'http://localhost/my-store-php/cart.php',
+            'success_url' => $base_url . '/success.php?order_id=' . $order_id,
+            'cancel_url' => $base_url . '/cart.php',
             'metadata' => ['order_id' => $order_id]
         ]);
         echo json_encode(['status' => 'success', 'type' => 'stripe', 'sessionId' => $checkout_session->id]);
     } catch(Exception $e) {
-        echo json_encode(['status' => 'error', 'message' => 'خطأ من Stripe: ' . $e->getMessage()]);
+        // لا تعرض تفاصيل الخطأ للمستخدم
+        error_log("Stripe Error: " . $e->getMessage()); // سجل الخطأ للمطور
+        http_response_code(500);
+        echo json_encode(['status' => 'error', 'message' => 'حدث خطأ أثناء معالجة الدفع. يرجى المحاولة مرة أخرى.']);
     }
 
 } elseif ($gateway['gateway_code'] == 'binance_pay') {
     // (منطق Binance Pay المستقبلي)
     echo json_encode(['status' => 'error', 'message' => 'Binance Pay غير مدعوم حاليًا.']);
-    
+
 } elseif ($gateway['gateway_code'] == 'bank_transfer') {
     // توجيه لصفحة تعليمات التحويل البنكي
     echo json_encode(['status' => 'success', 'type' => 'redirect', 'payment_url' => 'bank-transfer-instructions.php?order_id=' . $order_id]);

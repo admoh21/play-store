@@ -10,23 +10,51 @@ if (!isset($_SESSION['cart']) || !is_array($_SESSION['cart'])) {
 }
 $cart_count = count($_SESSION['cart']);
 
-// جلب الأقسام (باستثناء "أحدث المنتجات") مع منتجاتها
+// --- بداية تحسين الأداء ---
+
+// 1. جلب جميع الفئات أولاً
 $categories_query = $conn->query("SELECT * FROM categories WHERE name != 'أحدث المنتجات' ORDER BY display_order ASC");
 $categories = [];
+$category_ids = [];
 if ($categories_query) {
     while ($row = $categories_query->fetch_assoc()) {
-        $stmt = $conn->prepare("SELECT * FROM products WHERE category_id = ? ORDER BY id DESC LIMIT 8");
-        $stmt->bind_param("i", $row['id']);
-        $stmt->execute();
-        $products_result = $stmt->get_result();
-        $row['products'] = [];
-        while ($product_row = $products_result->fetch_assoc()) {
-            $row['products'][] = $product_row;
-        }
-        $stmt->close();
-        $categories[] = $row;
+        $row['products'] = []; // تهيئة مصفوفة المنتجات
+        $categories[$row['id']] = $row;
+        $category_ids[] = $row['id'];
     }
 }
+
+// 2. جلب أحدث 8 منتجات لكل فئة في استعلام واحد
+if (!empty($category_ids)) {
+    // هذا الاستعلام المعقد يستخدم متغيرات MySQL لجلب أحدث 8 منتجات فقط لكل فئة
+    // وهو أكثر كفاءة بكثير من الاستعلام داخل حلقة
+    $ids_string = implode(',', $category_ids);
+    $products_query_sql = "
+        SELECT p.* FROM (
+            SELECT
+                p.*,
+                @product_rank := IF(@current_category = p.category_id, @product_rank + 1, 1) AS product_rank,
+                @current_category := p.category_id
+            FROM products p
+            CROSS JOIN (SELECT @product_rank := 0, @current_category := 0) vars
+            WHERE p.category_id IN ($ids_string)
+            ORDER BY p.category_id, p.id DESC
+        ) p
+        WHERE p.product_rank <= 8";
+
+    $products_query = $conn->query($products_query_sql);
+
+    if($products_query) {
+        while ($product = $products_query->fetch_assoc()) {
+            if (isset($categories[$product['category_id']])) {
+                $categories[$product['category_id']]['products'][] = $product;
+            }
+        }
+    }
+}
+// إعادة تحويل المصفوفة إلى الشكل الأصلي
+$categories = array_values($categories);
+// --- نهاية تحسين الأداء ---
 
 // جلب أحدث 8 منتجات بشكل منفصل
 $latest_products_query = $conn->query("SELECT * FROM products ORDER BY created_at DESC LIMIT 8");
@@ -53,6 +81,7 @@ $conn->close();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
     <title>STORE_RXT</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css"/>
     <link rel="stylesheet" href="style.css">

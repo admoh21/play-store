@@ -1,5 +1,6 @@
 // checkout.js
 document.addEventListener('DOMContentLoaded', () => {
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
     const paymentForm = document.getElementById('payment-form');
     const checkoutButton = document.querySelector('.checkout-btn');
     const paymentOptions = document.querySelectorAll('.payment-option');
@@ -31,7 +32,10 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 const response = await fetch('api/initiate-universal-payment.php', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-Token': csrfToken
+                    },
                     body: JSON.stringify({ payment_method: selectedMethod })
                 });
 

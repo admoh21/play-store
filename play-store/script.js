@@ -2,6 +2,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- 1. متغيرات وإعدادات عامة ---
     const body = document.body;
     const isLoggedIn = body.dataset.isLoggedIn === 'true';
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
     const apiAuthURL = 'api/auth.php';
     const apiCartURL = 'api/cart_manager.php';
     const apiTestimonialURL = 'api/submit_testimonial.php';
@@ -73,6 +74,7 @@ document.addEventListener('DOMContentLoaded', () => {
     async function handleAuthForm(form, action, errorDiv) {
         const formData = new FormData(form);
         formData.append('action', action);
+        formData.append('csrf_token', csrfToken);
         errorDiv.textContent = '';
         try {
             const response = await fetch(apiAuthURL, { method: 'POST', body: formData });
@@ -80,6 +82,11 @@ document.addEventListener('DOMContentLoaded', () => {
             if (result.status === 'success') {
                 showToast(result.message);
                 if (action === 'login') {
+                    // تحديث رمز CSRF إذا تم إرساله
+                    if (result.csrf_token) {
+                        csrfToken = result.csrf_token;
+                        document.querySelector('meta[name="csrf-token"]').setAttribute('content', csrfToken);
+                    }
                     setTimeout(() => window.location.reload(), 1500);
                 } else {
                     openLoginModal();
@@ -124,6 +131,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const formData = new FormData();
         formData.append('action', 'add');
         formData.append('product_id', productId);
+        formData.append('csrf_token', csrfToken);
         try {
             const response = await fetch(apiCartURL, { method: 'POST', body: formData });
             const result = await response.json();

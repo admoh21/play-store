@@ -24,24 +24,70 @@ $bank_details = json_decode($payment_method['config_details'], true);
 
 // التعامل مع رفع الإيصال
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['receipt'])) {
-    if ($_FILES['receipt']['error'] == 0) {
-        $target_dir = "uploads/receipts/";
-        if (!file_exists($target_dir)) { mkdir($target_dir, 0777, true); }
-        $file_extension = pathinfo($_FILES["receipt"]["name"], PATHINFO_EXTENSION);
-        $target_file = $target_dir . "order_" . $order_id . "_" . uniqid() . '.' . $file_extension;
-        
-        if (move_uploaded_file($_FILES["receipt"]["tmp_name"], $target_file)) {
-            $receipt_path = str_replace('../', '', $target_file);
-            $stmt = $conn->prepare("UPDATE orders SET transaction_proof = ?, status = 'verification_pending' WHERE id = ?");
-            $stmt->bind_param("si", $receipt_path, $order_id);
-            $stmt->execute();
-            $stmt->close();
-            $message = "تم رفع الإيصال بنجاح! طلبك الآن قيد المراجعة.";
-            // تحديث بيانات الطلب
-            $order['status'] = 'verification_pending';
-            $order['transaction_proof'] = $receipt_path;
-        } else {
-            $message = "حدث خطأ أثناء رفع الملف.";
+    if (isset($_FILES['receipt']) && $_FILES['receipt']['error'] == UPLOAD_ERR_OK) {
+        $file = $_FILES['receipt'];
+        $max_size = 5 * 1024 * 1024; // 5 MB
+        $allowed_extensions = ['jpg', 'jpeg', 'png', 'gif'];
+        $allowed_mime_types = ['image/jpeg', 'image/png', 'image/gif'];
+
+        $file_extension = strtolower(pathinfo($file["name"], PATHINFO_EXTENSION));
+
+        // التحقق من حجم الملف
+        if ($file['size'] > $max_size) {
+            $message = "خطأ: حجم الملف كبير جدًا. الحد الأقصى 5 ميجابايت.";
+        }
+        // التحقق من امتداد الملف
+        elseif (!in_array($file_extension, $allowed_extensions)) {
+            $message = "خطأ: امتداد الملف غير مسموح به. الامتدادات المسموح بها: " . implode(', ', $allowed_extensions);
+        }
+        else {
+            // التحقق من نوع MIME الفعلي للملف
+            $finfo = new finfo(FILEINFO_MIME_TYPE);
+            $mime_type = $finfo->file($file['tmp_name']);
+
+            if (!in_array($mime_type, $allowed_mime_types)) {
+                $message = "خطأ: نوع الملف غير صالح.";
+            } else {
+                $target_dir = "uploads/receipts/";
+                if (!file_exists($target_dir)) {
+                    // استخدام أذونات أكثر أمانًا
+                    mkdir($target_dir, 0755, true);
+                }
+
+                // إنشاء اسم ملف فريد وآمن
+                $new_filename = "order_" . $order_id . "_" . uniqid() . '.' . $file_extension;
+                $target_file = $target_dir . $new_filename;
+
+                if (move_uploaded_file($file["tmp_name"], $target_file)) {
+                    $receipt_path = $target_file; // المسار آمن الآن
+                    $stmt = $conn->prepare("UPDATE orders SET transaction_proof = ?, status = 'verification_pending' WHERE id = ?");
+                    $stmt->bind_param("si", $receipt_path, $order_id);
+                    $stmt->execute();
+                    $stmt->close();
+                    $message = "تم رفع الإيصال بنجاح! طلبك الآن قيد المراجعة.";
+                    // تحديث بيانات الطلب
+                    $order['status'] = 'verification_pending';
+                    $order['transaction_proof'] = $receipt_path;
+                } else {
+                    $message = "حدث خطأ أثناء رفع الملف.";
+                }
+            }
+        }
+    } elseif (isset($_FILES['receipt'])) {
+        // التعامل مع أخطاء الرفع الأخرى
+        switch ($_FILES['receipt']['error']) {
+            case UPLOAD_ERR_INI_SIZE:
+                $message = "الملف أكبر من الحد المسموح به في الخادم.";
+                break;
+            case UPLOAD_ERR_FORM_SIZE:
+                $message = "الملف أكبر من الحد المسموح به في النموذج.";
+                break;
+            case UPLOAD_ERR_NO_FILE:
+                $message = "لم يتم رفع أي ملف.";
+                break;
+            default:
+                $message = "حدث خطأ غير متوقع أثناء الرفع.";
+                break;
         }
     }
 }
@@ -60,7 +106,7 @@ $conn->close();
             <div class="container">
                 <div class="instructions-box">
                     <h1>طلبك قيد الانتظار (رقم #<?= $order_id ?>)</h1>
-                    <?php if ($order['status'] == 'banned_payment'): ?>
+                    <?php if ($order['status'] == 'pending_payment'): ?>
                         <p class="lead">لإتمام الشراء، يرجى تحويل المبلغ <strong><?= $order['total_amount'] ?> ر.س.</strong> إلى الحساب التالي:</p>
                         <div class="bank-details"><pre><?= htmlspecialchars($bank_details['details']) ?></pre></div>
                         <div class="important-notice">

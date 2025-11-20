@@ -41,4 +41,19 @@ function getCurrentUser($conn) {
     $stmt->close();
     return $user;
 }
+
+// 4. وظائف حماية CSRF
+function generate_csrf_token() {
+    if (empty($_SESSION['csrf_token'])) {
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+    }
+    return $_SESSION['csrf_token'];
+}
+
+function verify_csrf_token($token) {
+    return isset($_SESSION['csrf_token']) && hash_equals($_SESSION['csrf_token'], $token);
+}
+
+// إنشاء رمز CSRF في كل مرة يتم فيها تحميل الصفحة (إذا لم يكن موجودًا)
+generate_csrf_token();
 ?>

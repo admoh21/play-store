@@ -5,6 +5,20 @@ require_once '../config.php';
 
 header("Content-Type: application/json; charset=UTF-8");
 
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    http_response_code(405); // Method Not Allowed
+    echo json_encode(['status' => 'error', 'message' => 'الطريقة غير مسموح بها.']);
+    exit;
+}
+
+// التحقق من رمز CSRF
+$csrf_token = $_POST['csrf_token'] ?? '';
+if (!verify_csrf_token($csrf_token)) {
+    http_response_code(403); // Forbidden
+    echo json_encode(['status' => 'error', 'message' => 'طلب غير صالح أو جلسة منتهية. يرجى تحديث الصفحة والمحاولة مرة أخرى.']);
+    exit;
+}
+
 // التأكد من تهيئة السلة كمصفوفة في بداية الجلسة
 if (!isset($_SESSION['cart']) || !is_array($_SESSION['cart'])) {
     $_SESSION['cart'] = [];
@@ -28,7 +42,7 @@ $action = $_POST['action'] ?? '';
 
 if ($action == 'add') {
     $product_id = isset($_POST['product_id']) ? (int)$_POST['product_id'] : 0;
-    
+
     if ($product_id > 0) {
         // التحقق من أن المنتج موجود بالفعل في قاعدة البيانات (خطوة أمان إضافية)
         $stmt = $conn->prepare("SELECT id FROM products WHERE id = ?");
@@ -41,7 +55,7 @@ if ($action == 'add') {
             if (!in_array($product_id, $_SESSION['cart'])) {
                 $_SESSION['cart'][] = $product_id;
             }
-            $response['status'] = 'success';
+            $response['status' => 'success';
             $response['message'] = 'تمت إضافة المنتج إلى السلة!';
         } else {
             $response['message'] = 'المنتج المطلوب غير موجود.';
